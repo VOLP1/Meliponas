@@ -1,0 +1,13 @@
+{
+  "name": "api-colmeia",
+  "version": "1.0.0",
+  "description": "API para receber dados de sensores de colmeia",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "pg": "^8.11.5"
+  }
+}
