@@ -1,11 +1,9 @@
 const express = require('express');
 const { Pool } = require('pg');
+const path = require('path'); // Adicionamos o 'path'
 
 // --- Configurações ---
 const PORT = 3000;
-
-// O Coolify vai nos fornecer a URL do banco através de uma variável de ambiente.
-// Isso é muito mais seguro do que colocar a senha no código!
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
 });
@@ -13,43 +11,39 @@ const pool = new Pool({
 const app = express();
 app.use(express.json());
 
-// Função para criar a tabela se ela não existir
-const createTable = async () => {
-    const createTableQuery = `
-        CREATE TABLE IF NOT EXISTS leituras (
-            id SERIAL PRIMARY KEY,
-            timestamp TIMESTAMPTZ DEFAULT NOW(),
-            temperatura REAL,
-            umidade REAL,
-            acel_x REAL,
-            acel_y REAL,
-            acel_z REAL
-        );
-    `;
-    try {
-        await pool.query(createTableQuery);
-        console.log('Tabela "leituras" verificada/criada com sucesso.');
-    } catch (err) {
-        console.error('Erro ao criar a tabela:', err.stack);
-    }
-};
+// --- Configuração do EJS ---
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
 
-// Rota de teste
-app.get('/', (req, res) => {
-    res.send('API para monitoramento de colmeia está no ar!');
+// --- ROTAS ---
+
+// ROTA PRINCIPAL (GET /): Agora ela vai mostrar o dashboard
+app.get('/', async (req, res) => {
+    try {
+        // Busca as 20 leituras mais recentes no banco de dados
+        const query = 'SELECT * FROM leituras ORDER BY timestamp DESC LIMIT 20';
+        const result = await pool.query(query);
+        
+        // Renderiza o arquivo 'dashboard.ejs' e passa os dados do banco para ele
+        res.render('dashboard', { leituras: result.rows });
+
+    } catch (err) {
+        console.error('Erro ao buscar dados para o dashboard:', err.stack);
+        res.status(500).send('Erro ao carregar os dados do dashboard.');
+    }
 });
 
-// Endpoint para receber os dados do ESP32
+// ENDPOINT DE DADOS (POST /dados): Continua o mesmo, recebendo dados do ESP32
 app.post('/dados', async (req, res) => {
-    const { temperatura, umidade, acelerometro } = req.body;
+    const { temperatura, umidade, peso_raw, acelerometro } = req.body;
     console.log('Dados recebidos:', req.body);
 
-    if (temperatura === undefined || umidade === undefined || acelerometro === undefined) {
+    if (temperatura === undefined || umidade === undefined || peso_raw === undefined || acelerometro === undefined) {
         return res.status(400).json({ error: 'Dados incompletos.' });
     }
 
-    const insertQuery = `INSERT INTO leituras (temperatura, umidade, acel_x, acel_y, acel_z) VALUES ($1, $2, $3, $4, $5) RETURNING id`;
-    const values = [temperatura, umidade, acelerometro.x, acelerometro.y, acelerometro.z];
+    const insertQuery = `INSERT INTO leituras (temperatura, umidade, peso_raw, acel_x, acel_y, acel_z) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`;
+    const values = [temperatura, umidade, peso_raw, acelerometro.x, acelerometro.y, acelerometro.z];
 
     try {
         const result = await pool.query(insertQuery, values);
@@ -61,8 +55,7 @@ app.post('/dados', async (req, res) => {
     }
 });
 
-// Inicia o servidor após garantir que a tabela existe
+// Inicia o servidor
 app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`);
-    createTable();
 });

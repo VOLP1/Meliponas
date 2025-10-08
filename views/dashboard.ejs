@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="15">
+    <title>Dashboard da Colmeia</title>
+    <style>
+        body { font-family: sans-serif; background-color: #f4f4f9; color: #333; margin: 20px; }
+        h1 { color: #4a4a4a; }
+        table { width: 100%; border-collapse: collapse; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        th, td { padding: 12px 15px; border: 1px solid #ddd; text-align: left; }
+        thead { background-color: #e49400; color: #fff; }
+        tbody tr:nth-child(even) { background-color: #f9f9f9; }
+    </style>
+</head>
+<body>
+    <h1>🐝 Dados Recentes da Colmeia</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Data e Hora</th>
+                <th>Temperatura (°C)</th>
+                <th>Umidade (%)</th>
+                <th>Peso (Raw)</th>
+                <th>Acel. X (m/s²)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% if (leituras.length > 0) { %>
+                <% leituras.forEach(leitura => { %>
+                    <tr>
+                        <td><%= new Date(leitura.timestamp).toLocaleString('pt-BR') %></td>
+                        <td><%= leitura.temperatura.toFixed(2) %></td>
+                        <td><%= leitura.umidade.toFixed(1) %></td>
+                        <td><%= leitura.peso_raw %></td>
+                        <td><%= leitura.acel_x.toFixed(2) %></td>
+                    </tr>
+                <% }); %>
+            <% } else { %>
+                <tr>
+                    <td colspan="5">Nenhum dado encontrado ainda.</td>
+                </tr>
+            <% } %>
+        </tbody>
+    </table>
+</body>
+</html>
